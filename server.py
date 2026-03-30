@@ -4,6 +4,7 @@ import sys
 from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from db import products_col, products_history_col
 from product import ProductRequest, collect_multiple, extract_product_id, clean_data
 from settings import settings
@@ -15,6 +16,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.app_title)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 scheduler = AsyncIOScheduler()
 
 async def get_latest_history(product_id: str):
@@ -100,9 +108,9 @@ async def toggle_tracking(product_id: str, active: bool):
         raise HTTPException(status_code=404, detail="Product not found")
     return {"status": True, "message": f"Tracking set to {active}"}
 
-@app.get("/history/{product_id}")
-async def get_product_history(product_id: str):
-    data = await get_latest_history(product_id)
-    if not data:
-        raise HTTPException(status_code=404, detail="No history found")
-    return {"status": True, "data": data}
+@app.get("/history/all/{product_id}")
+async def get_full_product_history(product_id: str):
+    docs = list(products_history_col.find({"product_id": product_id}).sort("created_at", 1))
+    for doc in docs:
+        doc["_id"] = str(doc["_id"])
+    return {"status": True, "data": docs}
