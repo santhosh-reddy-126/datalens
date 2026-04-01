@@ -1,20 +1,61 @@
 from browser_launcher import BrowserLauncher
 import asyncio
 import re
+import requests
 from pydantic import BaseModel
 from settings import settings
+
+
 
 class ProductRequest(BaseModel):
     url: str
 
 
-def extract_product_id(url: str):
-    match = re.search(r"/(?:dp|gp/product|d)/([A-Z0-9]{10})", url)
-    return match.group(1) if match else None
+def extract_product_id(url:str):
+    match = re.search(r"/dp/([A-Z0-9]{10})",url,re.IGNORECASE)
+    if match:
+        return match.group(1).upper()
+    return None
+
+
+
+def get_clean_amazon_url(input_url: str):
+    if not input_url:
+        return None
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    }
+
+    if "amzn.in" in input_url or "a.co" in input_url:
+        try:
+            response = requests.get(
+                input_url, 
+                headers=headers, 
+                allow_redirects=True, 
+                timeout=15, 
+                stream=True
+            )
+            final_url = response.url
+            response.close() 
+        except Exception:
+            return None
+    else:
+        final_url = input_url
+
+    asin_match = re.search(r"/(?:dp|gp/product|d)/([A-Z0-9]{10})", final_url, re.IGNORECASE)
+        
+    if asin_match:
+        asin = asin_match.group(1).upper()
+        return f"https://www.amazon.in/dp/{asin}"
+        
+    return None
+
 
 async def scrape_page(context, url):
-    async with context.new_page() as page:
+    async with context:
         try:
+            page = await context.new_page()
             await page.goto(url, timeout=settings.playwright_timeout_ms)
             await page.wait_for_selector("span#productTitle", timeout=10000)
             title = (await page.locator("span#productTitle").first.inner_text()).strip()
@@ -36,10 +77,13 @@ async def scrape_page(context, url):
 
 async def collect_multiple(urls):
     async with BrowserLauncher(headless=settings.playwright_headless) as browser:
-        async with browser.new_context() as context:
+        context = await browser.new_context()
+        try:
             tasks = [scrape_page(context, url) for url in urls]
             results = await asyncio.gather(*tasks)
             return results
+        finally:
+            await context.close()
 
 
 def clean_data(data):
