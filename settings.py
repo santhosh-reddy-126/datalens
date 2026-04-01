@@ -31,6 +31,7 @@ class Settings:
     app_title: str = os.getenv("APP_TITLE", "Price Tracker API")
     mongo_uri: str = os.getenv("MONGO_URI", "")
     scheduler_interval_minutes: int = _int(os.getenv("SCHEDULER_INTERVAL_MINUTES"), 600)
+    port: int = _int(os.getenv("PORT"), 8000)
     playwright_headless: bool = _bool(os.getenv("PLAYWRIGHT_HEADLESS"), True)
     playwright_timeout_ms: int = _int(os.getenv("PLAYWRIGHT_TIMEOUT_MS"), 60000)
 

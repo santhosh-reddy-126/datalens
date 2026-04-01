@@ -1,7 +1,9 @@
 import asyncio
 import logging
+import os
 import sys
 from datetime import datetime, timezone
+import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -114,3 +116,14 @@ async def get_full_product_history(product_id: str):
     for doc in docs:
         doc["_id"] = str(doc["_id"])
     return {"status": True, "data": docs}
+
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "server:app",
+        host="0.0.0.0",
+        port=settings.port,
+        log_level="info",
+        loop="asyncio",
+        workers=1,
+    )
