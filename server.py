@@ -8,7 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from db import products_col, products_history_col
-from product import ProductRequest, collect_multiple, extract_product_id, clean_data
+from product import ProductRequest, collect_multiple, extract_product_id, clean_data, get_clean_amazon_url
 from settings import settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -78,16 +78,19 @@ async def startup_event():
 
 @app.post("/product", status_code=status.HTTP_201_CREATED)
 async def add_new_product(request: ProductRequest):
-    product_id = extract_product_id(request.url)
+    clean_url = get_clean_amazon_url(str(request.url))
+    if not clean_url:
+        return {"status": False, "message": "unable to clean url"}
+    product_id = extract_product_id(clean_url)
     if not product_id:
         raise HTTPException(status_code=400, detail="Invalid Amazon URL")
-    results = await collect_multiple([request.url])
+    results = await collect_multiple([clean_url])
     if not results or "error" in results[0]:
         raise HTTPException(status_code=500, detail="Scraping failed")
     data = clean_data(results[0])
     now = datetime.now(timezone.utc)
-    update_db(product_id, data, request.url, now, is_new=True)
-    return {"status": "success", "product_id": product_id, "data": data}
+    update_db(product_id, data, clean_url, now, is_new=True)
+    return {"status": True, "product_id": product_id, "data": data}
 
 @app.get("/product")
 async def list_tracked_products():
