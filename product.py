@@ -13,8 +13,9 @@ def extract_product_id(url: str):
     return match.group(1) if match else None
 
 async def scrape_page(context, url):
-    async with context.new_page() as page:
+    async with context:
         try:
+            page = await context.new_page()
             await page.goto(url, timeout=settings.playwright_timeout_ms)
             await page.wait_for_selector("span#productTitle", timeout=10000)
             title = (await page.locator("span#productTitle").first.inner_text()).strip()
@@ -36,10 +37,13 @@ async def scrape_page(context, url):
 
 async def collect_multiple(urls):
     async with BrowserLauncher(headless=settings.playwright_headless) as browser:
-        async with browser.new_context() as context:
+        context = await browser.new_context()
+        try:
             tasks = [scrape_page(context, url) for url in urls]
             results = await asyncio.gather(*tasks)
             return results
+        finally:
+            await context.close()
 
 
 def clean_data(data):

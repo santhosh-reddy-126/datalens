@@ -11,9 +11,6 @@ from db import products_col, products_history_col
 from product import ProductRequest, collect_multiple, extract_product_id, clean_data
 from settings import settings
 
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -123,7 +120,5 @@ if __name__ == "__main__":
         "server:app",
         host="0.0.0.0",
         port=settings.port,
-        log_level="info",
-        loop="asyncio",
-        workers=1,
+        log_level="info"
     )
