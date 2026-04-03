@@ -90,6 +90,7 @@ async def add_new_product(request: ProductRequest):
 
     results = await collect_multiple([clean_url])
     if not results or "error" in results[0]:
+        print(results)
         raise HTTPException(status_code=500, detail="Scraping failed")
 
     data = clean_data(results[0])
@@ -176,6 +177,23 @@ async def get_full_product_history(product_id: str):
 
     return {"data": docs} 
 
+
+@app.delete("/product/{product_id}", status_code=status.HTTP_200_OK)
+async def delete_product(product_id: str):
+    
+    res = products_col.delete_one({"product_id": product_id})
+
+    if res.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found"
+        )
+
+    products_history_col.delete_many({"product_id": product_id})
+
+    return {
+        "message": "Product deleted successfully"
+    }
 
 if __name__ == "__main__":
     uvicorn.run(

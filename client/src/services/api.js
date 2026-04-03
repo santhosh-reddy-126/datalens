@@ -36,3 +36,9 @@ export async function toggleTracking(productId, active) {
 export async function fetchFullHistory(productId) {
   return request(`/history/all/${productId}`);
 }
+
+export async function deleteProduct(productId) {
+  return request(`/product/${productId}`, {
+    method: 'DELETE',
+  });
+}

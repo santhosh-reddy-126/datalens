@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer
 } from 'recharts';
 import {
   ArrowLeft, Star, Eye, EyeOff, TrendingDown, TrendingUp,
-  BarChart3, Clock, ExternalLink
+  BarChart3, Clock, ExternalLink, Trash2
 } from 'lucide-react';
-import { fetchProducts, fetchFullHistory, toggleTracking } from '../services/api';
+import { fetchProducts, fetchFullHistory, toggleTracking, deleteProduct } from '../services/api';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import './ProductDetail.css';
 
 function CustomTooltip({ active, payload, label }) {
@@ -23,9 +24,12 @@ function CustomTooltip({ active, payload, label }) {
 
 export default function ProductDetail() {
   const { productId } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -70,6 +74,23 @@ export default function ProductDetail() {
       setProduct((p) => ({ ...p, tracking: !p.tracking }));
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleDelete = () => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteProduct(productId);
+      navigate('/');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert(err.message || 'Failed to delete product');
+      setDeleting(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -173,6 +194,15 @@ export default function ProductDetail() {
                 <ExternalLink size={16} /> View on Amazon
               </a>
             )}
+            <button
+              className="btn btn-ghost"
+              onClick={handleDelete}
+              disabled={deleting}
+              style={{ color: 'var(--danger)' }}
+              id="delete-product-btn"
+            >
+              <Trash2 size={16} /> {deleting ? 'Deleting...' : 'Delete'}
+            </button>
           </div>
         </div>
       </div>
@@ -286,6 +316,15 @@ export default function ProductDetail() {
           </div>
         )}
       </div>
+
+      {showDeleteModal && (
+        <DeleteConfirmModal
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={confirmDelete}
+          loading={deleting}
+          productTitle={product?.title}
+        />
+      )}
     </div>
   );
 }
