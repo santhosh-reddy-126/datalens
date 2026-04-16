@@ -6,6 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from db import products_col, products_history_col, search_product_by_id
+from auth import router as auth_router
 from product import ProductRequest, collect_multiple, extract_product_id, clean_data, get_clean_amazon_url
 from settings import settings
 
@@ -22,6 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 scheduler = AsyncIOScheduler()
+app.include_router(auth_router)
 
 async def get_latest_history(product_id: str):
     doc = products_history_col.find_one({"product_id": product_id}, sort=[("created_at", -1)])
