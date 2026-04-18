@@ -5,9 +5,9 @@ from typing import Optional
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from db import products_col, products_history_col, search_product_by_id
-from auth import router as auth_router
-from product import ProductRequest, collect_multiple, extract_product_id, clean_data, get_clean_amazon_url
+from database.db import products_col, products_history_col, search_product_by_id
+from routes.auth_route import router as auth_router
+from models.product_model import ProductRequest, collect_multiple, extract_product_id, clean_data, get_clean_amazon_url
 from settings import settings
 
 

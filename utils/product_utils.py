@@ -2,14 +2,10 @@ from browser_launcher import BrowserLauncher
 import asyncio
 import re
 import requests
-from pydantic import BaseModel
 from settings import settings
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 
-
-class ProductRequest(BaseModel):
-    url: str
 
 
 def extract_product_id(url:str):
@@ -163,9 +159,5 @@ def clean_data(data):
     except Exception as e:
         print("Cleaning error:", e)
         return None
-
-
-
-
 
 
