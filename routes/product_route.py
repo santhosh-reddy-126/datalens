@@ -17,7 +17,7 @@ from database.product_db import update_product,search_product_by_id
 
 
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="", tags=["product"])
 
 
 @router.post("/product", status_code=status.HTTP_201_CREATED)
@@ -55,7 +55,7 @@ async def list_products():
     products = []
     for p in cursor:
         p["_id"] = str(p["_id"])
-        products.routerend(p)
+        products.append(p)
     
     return {"data": products}
 
@@ -79,7 +79,7 @@ async def search_products(keyword: str):
     results = []
     for p in products_col.find(query):
         p["_id"] = str(p["_id"])
-        results.routerend(p)
+        results.append(p)
 
     return {"data": results}
 
