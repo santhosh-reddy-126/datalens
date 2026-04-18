@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database.db import products_col
 from routes.auth_route import router as auth_router
 from routes.product_route import router as product_router
-from models.product_model import collect_multiple, clean_data
+from utils.product_utils import collect_multiple, clean_data
 from database.product_db import update_product
 from settings import settings
 

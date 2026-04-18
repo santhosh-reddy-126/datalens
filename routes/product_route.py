@@ -48,14 +48,9 @@ async def add_new_product(request: ProductRequest):
     }
 
 @router.get("/product", status_code=status.HTTP_200_OK)
-async def list_products(tracking: Optional[bool] = None):
+async def list_products():
     
-    query = {}
-    
-    if tracking is not None:
-        query["tracking"] = tracking
-
-    cursor = products_col.find(query)
+    cursor = products_col.find()
 
     products = []
     for p in cursor:
@@ -79,7 +74,7 @@ async def get_product(product_id: str):
 
 @router.get("/product/search/{keyword}", status_code=status.HTTP_200_OK)
 async def search_products(keyword: str):
-    query = {"tracking": True, "title": {"$regex": keyword, "$options": "i"}}
+    query = {"title": {"$regex": keyword, "$options": "i"}}
     
     results = []
     for p in products_col.find(query):
@@ -87,21 +82,6 @@ async def search_products(keyword: str):
         results.routerend(p)
 
     return {"data": results}
-
-@router.patch("/product/track/{product_id}", status_code=status.HTTP_200_OK)
-async def toggle_tracking(product_id: str, active: bool):
-    res = products_col.update_one(
-        {"product_id": product_id},
-        {"$set": {"tracking": active}}
-    )
-
-    if res.matched_count == 0:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
-
-    return {"message": f"Tracking set to {active}"}
 
 
 @router.get("/history/all/{product_id}", status_code=status.HTTP_200_OK)
