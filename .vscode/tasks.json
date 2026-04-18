@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Backend",
+      "type": "shell",
+      "command": "python server.py",
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Run Frontend",
+      "type": "shell",
+      "command": "cd client && npm run dev",
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Run Full Stack",
+      "dependsOn": ["Run Backend", "Run Frontend"],
+      "dependsOrder": "parallel"
+    }
+  ]
+}
