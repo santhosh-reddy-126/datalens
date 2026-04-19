@@ -2,10 +2,11 @@ from datetime import datetime
 
 from database.db import products_col, products_history_col
 from models.product_model import ProductInDB
-from models.product_history_model import ProductHistoryInDB
+from models.product_model import ProductHistoryInDB
+from models.users_track_model import UsersTrackInDB
 
 
-def create_product(product_id: str, data: dict, url: str, now: datetime) -> None:
+def create_product(product_id: str, data: dict, url: str, now: datetime, email: str) -> None:
     """Insert a brand-new product and its first history entry."""
     product = ProductInDB(
         product_id=product_id,

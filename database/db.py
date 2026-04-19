@@ -15,4 +15,8 @@ users_track_col = db["users_track"]
 users_col.create_index("email", unique=True)
 products_col.create_index("product_id", unique=True)
 
-     
+def fix_id(docs):
+    for doc in docs:
+        if "_id" in doc:
+            doc["_id"] = str(doc["_id"])
+    return docs
