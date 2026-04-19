@@ -1,16 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Star, Eye, EyeOff, TrendingUp, ExternalLink } from 'lucide-react';
+import { Star, TrendingUp, ExternalLink } from 'lucide-react';
 import './ProductCard.css';
 
-export default function ProductCard({ product, onToggleTracking }) {
-  const handleToggle = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onToggleTracking) {
-      onToggleTracking(product.product_id, !product.tracking);
-    }
-  };
-
+export default function ProductCard({ product }) {
   return (
     <Link
       to={`/product/${product.product_id}`}
@@ -25,13 +17,6 @@ export default function ProductCard({ product, onToggleTracking }) {
             <TrendingUp size={32} />
           </div>
         )}
-        <button
-          className={`tracking-toggle ${product.tracking ? 'active' : ''}`}
-          onClick={handleToggle}
-          title={product.tracking ? 'Pause tracking' : 'Resume tracking'}
-        >
-          {product.tracking ? <Eye size={14} /> : <EyeOff size={14} />}
-        </button>
       </div>
 
       <div className="product-card-body">
@@ -52,9 +37,7 @@ export default function ProductCard({ product, onToggleTracking }) {
         </div>
 
         <div className="product-card-footer">
-          <span className={`badge ${product.tracking ? 'badge-success' : 'badge-warning'}`}>
-            {product.tracking ? 'Tracking' : 'Paused'}
-          </span>
+          <span className="badge badge-accent">View Details</span>
           <ExternalLink size={14} className="card-link-icon" />
         </div>
       </div>

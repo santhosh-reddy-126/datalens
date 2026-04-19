@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Package, TrendingUp, Activity, Plus, Frown } from 'lucide-react';
+import { Package, TrendingUp, BarChart3, Plus, Frown } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import AddProductModal from '../components/AddProductModal';
-import { fetchProducts, searchProducts, toggleTracking } from '../services/api';
+import { fetchProducts, searchProducts } from '../services/api';
 import './Dashboard.css';
 
 export default function Dashboard({ searchQuery }) {
@@ -31,24 +31,12 @@ export default function Dashboard({ searchQuery }) {
     loadProducts();
   }, [loadProducts]);
 
-  const handleToggle = async (productId, active) => {
-    try {
-      await toggleTracking(productId, active);
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.product_id === productId ? { ...p, tracking: active } : p
-        )
-      );
-    } catch (err) {
-      console.error('Toggle failed:', err);
-    }
-  };
-
-  const activeCount = products.filter((p) => p.tracking).length;
   const avgPrice =
     products.length > 0
       ? products.reduce((sum, p) => sum + (p.price || 0), 0) / products.length
       : 0;
+
+  const topRated = products.filter((p) => p.rating && p.rating >= 4).length;
 
   return (
     <div className="dashboard container">
@@ -74,11 +62,11 @@ export default function Dashboard({ searchQuery }) {
 
           <div className="stat-card glass-card">
             <div className="stat-icon" style={{ background: 'rgba(52, 211, 153, 0.1)' }}>
-              <Activity size={20} style={{ color: 'var(--success)' }} />
+              <BarChart3 size={20} style={{ color: 'var(--success)' }} />
             </div>
             <div className="stat-info">
-              <span className="stat-value">{activeCount}</span>
-              <span className="stat-label">Active Tracking</span>
+              <span className="stat-value">{topRated}</span>
+              <span className="stat-label">Top Rated (4★+)</span>
             </div>
           </div>
 
@@ -100,7 +88,7 @@ export default function Dashboard({ searchQuery }) {
       <section className="products-section">
         <div className="products-header">
           <h2>
-            {searchQuery ? `Results for "${searchQuery}"` : 'Tracked Products'}
+            {searchQuery ? `Results for "${searchQuery}"` : 'Your Products'}
           </h2>
           <button
             className="btn btn-primary"
@@ -148,10 +136,7 @@ export default function Dashboard({ searchQuery }) {
           <div className="products-grid">
             {products.map((product, index) => (
               <div key={product.product_id} style={{ animationDelay: `${index * 60}ms` }} className="fade-in">
-                <ProductCard
-                  product={product}
-                  onToggleTracking={handleToggle}
-                />
+                <ProductCard product={product} />
               </div>
             ))}
           </div>

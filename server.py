@@ -1,13 +1,14 @@
 import logging
 from datetime import datetime, timezone
 import uvicorn
-from typing import Optional
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from db import products_col, products_history_col, search_product_by_id
-from auth import router as auth_router
-from product import ProductRequest, collect_multiple, extract_product_id, clean_data, get_clean_amazon_url
+from database.db import products_col
+from routes.auth_route import router as auth_router
+from routes.product_route import router as product_router
+from utils.product_utils import collect_multiple, clean_data
+from database.product_db import update_product_price
 from settings import settings
 
 
@@ -24,36 +25,11 @@ app.add_middleware(
 )
 scheduler = AsyncIOScheduler()
 app.include_router(auth_router)
+app.include_router(product_router)
 
-async def get_latest_history(product_id: str):
-    doc = products_history_col.find_one({"product_id": product_id}, sort=[("created_at", -1)])
-    if doc:
-        doc["_id"] = str(doc["_id"])
-    return doc
-
-def update_db(product_id, data, url, now, is_new=False):
-    payload = {
-        "price": data.get("price"),
-        "updated_at": now
-    }
-    if is_new:
-        payload.update({
-            "url": url,
-            "title": data.get("title"),
-            "imageUrl": data.get("image_url"),
-            "rating": data.get("rating"),
-            "tracking": True
-        })
-    products_col.update_one({"product_id": product_id}, {"$set": payload}, upsert=True)
-
-    products_history_col.insert_one({
-        "product_id": product_id,
-        "price": data.get("price"),
-        "created_at": now
-    })
 
 async def track_prices_job():
-    tracked_products = list(products_col.find({"tracking": True}))
+    tracked_products = list(products_col.find())
     if not tracked_products:
         logger.info("No tracked products found.")
         return
@@ -69,7 +45,7 @@ async def track_prices_job():
         new_price = data.get("price")
         if new_price != product.get("price"):
             logger.info("Price change detected for %s", product["product_id"])
-            update_db(product["product_id"], data, product["url"], now, is_new=False)
+            update_product_price(product["product_id"], data, now)
 
 @app.on_event("startup")
 async def startup_event():
@@ -77,125 +53,6 @@ async def startup_event():
     scheduler.start()
     logger.info("Price Tracker Scheduler active")
 
-@app.post("/product", status_code=status.HTTP_201_CREATED)
-async def add_new_product(request: ProductRequest):
-    clean_url = get_clean_amazon_url(str(request.url))
-    product_id = extract_product_id(clean_url)
-
-    existing = search_product_by_id(product_id)
-    if existing:
-        
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Product already exists!"
-        )
-
-    results = await collect_multiple([clean_url])
-    if not results or "error" in results[0]:
-        print(results)
-        raise HTTPException(status_code=500, detail="Scraping failed")
-
-    data = clean_data(results[0])
-    now = datetime.now(timezone.utc)
-
-    update_db(product_id, data, clean_url, now, is_new=True)
-    return {
-        "product_id": product_id,
-        "data": data
-    }
-
-@app.get("/product", status_code=status.HTTP_200_OK)
-async def list_products(tracking: Optional[bool] = None):
-    
-    query = {}
-    
-    if tracking is not None:
-        query["tracking"] = tracking
-
-    cursor = products_col.find(query)
-
-    products = []
-    for p in cursor:
-        p["_id"] = str(p["_id"])
-        products.append(p)
-    
-    return {"data": products}
-
-@app.get("/product/{product_id}", status_code=status.HTTP_200_OK)
-async def get_product(product_id: str):
-    result = search_product_by_id(product_id)
-
-    if not result:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
-
-    result["_id"] = str(result["_id"])
-    return {"data": result}
-
-@app.get("/product/search/{keyword}", status_code=status.HTTP_200_OK)
-async def search_products(keyword: str):
-    query = {"tracking": True, "title": {"$regex": keyword, "$options": "i"}}
-    
-    results = []
-    for p in products_col.find(query):
-        p["_id"] = str(p["_id"])
-        results.append(p)
-
-    return {"data": results}
-
-@app.patch("/product/track/{product_id}", status_code=status.HTTP_200_OK)
-async def toggle_tracking(product_id: str, active: bool):
-    res = products_col.update_one(
-        {"product_id": product_id},
-        {"$set": {"tracking": active}}
-    )
-
-    if res.matched_count == 0:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
-
-    return {"message": f"Tracking set to {active}"}
-
-
-@app.get("/history/all/{product_id}", status_code=status.HTTP_200_OK)
-async def get_full_product_history(product_id: str):
-    docs = list(
-        products_history_col.find({"product_id": product_id})
-        .sort("created_at", 1)
-    )
-
-    if not docs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No history found"
-        )
-
-    for doc in docs:
-        doc["_id"] = str(doc["_id"])
-
-    return {"data": docs} 
-
-
-@app.delete("/product/{product_id}", status_code=status.HTTP_200_OK)
-async def delete_product(product_id: str):
-    
-    res = products_col.delete_one({"product_id": product_id})
-
-    if res.deleted_count == 0:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
-
-    products_history_col.delete_many({"product_id": product_id})
-
-    return {
-        "message": "Product deleted successfully"
-    }
 
 if __name__ == "__main__":
     uvicorn.run(

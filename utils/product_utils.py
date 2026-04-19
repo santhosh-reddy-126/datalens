@@ -2,14 +2,11 @@ from browser_launcher import BrowserLauncher
 import asyncio
 import re
 import requests
-from pydantic import BaseModel
 from settings import settings
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+from database.db import products_col, products_history_col
 
 
-
-class ProductRequest(BaseModel):
-    url: str
 
 
 def extract_product_id(url:str):
@@ -17,6 +14,12 @@ def extract_product_id(url:str):
     if match:
         return match.group(1).upper()
     return None
+
+async def get_latest_history(product_id: str):
+    doc = products_history_col.find_one({"product_id": product_id}, sort=[("created_at", -1)])
+    if doc:
+        doc["_id"] = str(doc["_id"])
+    return doc
 
 
 
@@ -163,9 +166,5 @@ def clean_data(data):
     except Exception as e:
         print("Cleaning error:", e)
         return None
-
-
-
-
 
 

@@ -32,12 +32,6 @@ export async function searchProducts(keyword) {
   return request(`/product/search/${encodeURIComponent(keyword)}`);
 }
 
-export async function toggleTracking(productId, active) {
-  return request(`/product/track/${productId}?active=${active}`, {
-    method: 'PATCH',
-  });
-}
-
 export async function fetchFullHistory(productId) {
   return request(`/history/all/${productId}`);
 }
