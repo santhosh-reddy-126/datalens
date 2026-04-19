@@ -2,18 +2,25 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime, timezone
 
 from database.db import users_col
-from models.auth_model import RegisterRequest, LoginRequest
+from models.auth_model import (
+    RegisterRequest,
+    LoginRequest,
+    UserInDB,
+    UserResponse,
+    AuthResponse,
+    MeResponse,
+)
 from utils.auth_utils import (
     hash_password,
     verify_password,
     create_token,
-    get_current_user
+    get_current_user,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=AuthResponse)
 async def register(req: RegisterRequest):
     if len(req.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
@@ -22,44 +29,44 @@ async def register(req: RegisterRequest):
     if existing:
         raise HTTPException(status_code=409, detail="Email already registered")
 
-    user = {
-        "name": req.name.strip(),
-        "email": req.email.lower().strip(),
-        "password_hash": hash_password(req.password),
-        "created_at": datetime.now(timezone.utc),
-    }
+    user = UserInDB(
+        name=req.name.strip(),
+        email=req.email.lower().strip(),
+        password_hash=hash_password(req.password),
+        created_at=datetime.now(timezone.utc),
+    )
 
-    result = users_col.insert_one(user)
+    result = users_col.insert_one(user.model_dump())
     user_id = str(result.inserted_id)
 
-    token = create_token(user_id, req.email, req.name.strip())
+    token = create_token(user_id, user.email, user.name)
 
-    return {
-        "token": token,
-        "user": {"id": user_id, "name": req.name.strip(), "email": req.email},
-    }
+    return AuthResponse(
+        token=token,
+        user=UserResponse(id=user_id, name=user.name, email=user.email),
+    )
 
 
-@router.post("/login")
+@router.post("/login", response_model=AuthResponse)
 async def login(req: LoginRequest):
-    user = users_col.find_one({"email": req.email.lower().strip()})
+    doc = users_col.find_one({"email": req.email.lower().strip()})
 
-    if not user or not verify_password(req.password, user["password_hash"]):
+    if not doc or not verify_password(req.password, doc["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    user_id = str(user["_id"])
-    token = create_token(user_id, user["email"], user["name"])
+    user_id = str(doc["_id"])
+    token = create_token(user_id, doc["email"], doc["name"])
 
-    return {
-        "token": token,
-        "user": {"id": user_id, "name": user["name"], "email": user["email"]},
-    }
+    return AuthResponse(
+        token=token,
+        user=UserResponse(id=user_id, name=doc["name"], email=doc["email"]),
+    )
 
 
-@router.get("/me")
+@router.get("/me", response_model=MeResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
-    return {
-        "id": current_user["sub"],
-        "email": current_user["email"],
-        "name": current_user["name"],
-    }
+    return MeResponse(
+        id=current_user["sub"],
+        email=current_user["email"],
+        name=current_user["name"],
+    )

@@ -9,7 +9,7 @@ from models.product_model import (
     ProductCreateResponse,
     MessageResponse,
 )
-from models.product_history_model import (
+from models.product_model import (
     ProductHistoryResponse,
     ProductHistoryListResponse,
 )

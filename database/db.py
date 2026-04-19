@@ -7,7 +7,7 @@ db = client["datalens"]
 products_col = db["product"]
 products_history_col = db["product_history"]
 users_col = db["users"]
-
+users_track_col = db["users_track"]
 
 
 

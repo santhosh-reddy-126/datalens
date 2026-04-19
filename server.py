@@ -8,7 +8,7 @@ from database.db import products_col
 from routes.auth_route import router as auth_router
 from routes.product_route import router as product_router
 from utils.product_utils import collect_multiple, clean_data
-from database.product_db import update_product
+from database.product_db import update_product_price
 from settings import settings
 
 
@@ -45,7 +45,7 @@ async def track_prices_job():
         new_price = data.get("price")
         if new_price != product.get("price"):
             logger.info("Price change detected for %s", product["product_id"])
-            update_product(product["product_id"], data, product["url"], now, is_new=False)
+            update_product_price(product["product_id"], data, now)
 
 @app.on_event("startup")
 async def startup_event():
