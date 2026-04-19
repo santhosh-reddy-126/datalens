@@ -29,7 +29,7 @@ app.include_router(product_router)
 
 
 async def track_prices_job():
-    tracked_products = list(products_col.find({"tracking": True}))
+    tracked_products = list(products_col.find())
     if not tracked_products:
         logger.info("No tracked products found.")
         return

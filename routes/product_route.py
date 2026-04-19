@@ -1,27 +1,18 @@
-from fastapi import APIRouter, HTTPException, status
-from typing import Optional
+from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime, timezone
-
 
 from database.db import products_col, products_history_col
 from models.product_model import ProductRequest
 from utils.product_utils import extract_product_id, get_clean_amazon_url, collect_multiple, clean_data
-from database.product_db import update_product,search_product_by_id
-
-
-
-
-
-
-
-
+from database.product_db import update_product, search_product_by_id
+from utils.auth_utils import get_current_user
 
 
 router = APIRouter(prefix="", tags=["product"])
 
 
 @router.post("/product", status_code=status.HTTP_201_CREATED)
-async def add_new_product(request: ProductRequest):
+async def add_new_product(request: ProductRequest, _user: dict = Depends(get_current_user)):
     clean_url = get_clean_amazon_url(str(request.url))
     product_id = extract_product_id(clean_url)
 
@@ -48,7 +39,7 @@ async def add_new_product(request: ProductRequest):
     }
 
 @router.get("/product", status_code=status.HTTP_200_OK)
-async def list_products():
+async def list_products(_user: dict = Depends(get_current_user)):
     
     cursor = products_col.find()
 
@@ -60,7 +51,7 @@ async def list_products():
     return {"data": products}
 
 @router.get("/product/{product_id}", status_code=status.HTTP_200_OK)
-async def get_product(product_id: str):
+async def get_product(product_id: str, _user: dict = Depends(get_current_user)):
     result = search_product_by_id(product_id)
 
     if not result:
@@ -73,7 +64,7 @@ async def get_product(product_id: str):
     return {"data": result}
 
 @router.get("/product/search/{keyword}", status_code=status.HTTP_200_OK)
-async def search_products(keyword: str):
+async def search_products(keyword: str, _user: dict = Depends(get_current_user)):
     query = {"title": {"$regex": keyword, "$options": "i"}}
     
     results = []
@@ -85,7 +76,7 @@ async def search_products(keyword: str):
 
 
 @router.get("/history/all/{product_id}", status_code=status.HTTP_200_OK)
-async def get_full_product_history(product_id: str):
+async def get_full_product_history(product_id: str, _user: dict = Depends(get_current_user)):
     docs = list(
         products_history_col.find({"product_id": product_id})
         .sort("created_at", 1)
@@ -104,7 +95,7 @@ async def get_full_product_history(product_id: str):
 
 
 @router.delete("/product/{product_id}", status_code=status.HTTP_200_OK)
-async def delete_product(product_id: str):
+async def delete_product(product_id: str, _user: dict = Depends(get_current_user)):
     
     res = products_col.delete_one({"product_id": product_id})
 

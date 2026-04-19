@@ -5,10 +5,10 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import {
-  ArrowLeft, Star, Eye, EyeOff, TrendingDown, TrendingUp,
+  ArrowLeft, Star, TrendingDown, TrendingUp,
   BarChart3, Clock, ExternalLink, Trash2
 } from 'lucide-react';
-import { fetchProducts, fetchFullHistory, toggleTracking, deleteProduct } from '../services/api';
+import { fetchProducts, fetchFullHistory, deleteProduct } from '../services/api';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import './ProductDetail.css';
 
@@ -66,16 +66,6 @@ export default function ProductDetail() {
     }
     load();
   }, [productId]);
-
-  const handleToggle = async () => {
-    if (!product) return;
-    try {
-      await toggleTracking(productId, !product.tracking);
-      setProduct((p) => ({ ...p, tracking: !p.tracking }));
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const handleDelete = () => {
     setShowDeleteModal(true);
@@ -146,12 +136,6 @@ export default function ProductDetail() {
         </div>
 
         <div className="detail-info">
-          <div className="detail-info-top">
-            <span className={`badge ${product.tracking ? 'badge-success' : 'badge-warning'}`}>
-              {product.tracking ? 'Tracking Active' : 'Tracking Paused'}
-            </span>
-          </div>
-
           <h1 className="detail-title">{product.title}</h1>
 
           <div className="detail-price-row">
@@ -169,27 +153,12 @@ export default function ProductDetail() {
           </div>
 
           <div className="detail-actions">
-            <button
-              className={`btn ${product.tracking ? 'btn-ghost' : 'btn-primary'}`}
-              onClick={handleToggle}
-              id="toggle-tracking-btn"
-            >
-              {product.tracking ? (
-                <>
-                  <EyeOff size={16} /> Pause Tracking
-                </>
-              ) : (
-                <>
-                  <Eye size={16} /> Resume Tracking
-                </>
-              )}
-            </button>
             {product.url && (
               <a
                 href={product.url}
                 target="_blank"
                 rel="noreferrer"
-                className="btn btn-ghost"
+                className="btn btn-primary"
               >
                 <ExternalLink size={16} /> View on Amazon
               </a>

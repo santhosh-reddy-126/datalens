@@ -34,32 +34,6 @@
   color: var(--text-muted);
 }
 
-.tracking-toggle {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.tracking-toggle:hover {
-  background: rgba(0, 0, 0, 0.7);
-  color: var(--text-primary);
-}
-
-.tracking-toggle.active {
-  color: var(--success);
-}
-
 .product-card-body {
   padding: 16px;
   display: flex;
